@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="utf-8">
+    <title>Open Food Facts</title>
+    <meta name="robots" content="All">
+    <meta name="author" content="Udgiver">
+    <meta name="copyright" content="Information om copyright">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="css/styles.scss" rel="stylesheet" type="text/scss">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+  background-color: #4e6161; 
+  font-family: 'Roboto', sans-serif;
+
+}
+        .products-container {
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            margin-bottom: 40px;
+        }
+
+        .product {
+            background-color: #f4f1e4; 
+
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .product img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        h1 {
+            color: #fff;
+            text-align: center;
+            
+        }
+        h2 {
+            color: #f1c40f;
+            text-align: center;
+            
+        }
+
+        h3 {
+            margin-bottom: 10px;
+            color: #383138;
+            
+        }
+
+        .hidden {
+            display: none;
+        }
+
+button.red {
+  --bg: #e74c3c;
+  --text-color: #fff;
+  position: relative;
+  width: 150px;
+  border: none;
+  background: var(--bg);
+  color: var(--text-color);
+  padding: 1em;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: 0.2s;
+  border-radius: 5px;
+  opacity: 0.8;
+  letter-spacing: 1px;
+  box-shadow: #c0392b 0px 7px 2px, #000 0px 8px 5px;
+}
+
+button.red:hover {
+  opacity: 1;
+}
+
+button.red:active {
+  top: 4px;
+  box-shadow: #c0392b 0px 3px 2px, #000 0px 3px 5px;
+}
+
+button.green {
+  --bg: #27ae60;
+  --text-color: #fff;
+  position: relative;
+  width: 150px;
+  border: none;
+  background: var(--bg);
+  color: var(--text-color);
+  padding: 1em;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: 0.2s;
+  border-radius: 5px;
+  opacity: 0.8;
+  letter-spacing: 1px;
+  box-shadow: #229954 0px 7px 2px, #000 0px 8px 5px;
+}
+
+button.green:hover {
+  opacity: 1;
+}
+
+button.green:active {
+  top: 4px;
+  box-shadow: #229954 0px 3px 2px, #000 0px 3px 5px;
+}
+
+.modal {
+  display: none; 
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); 
+}
+
+.modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+#closeModal {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+    </style>
+</head>
+<body>
+
+    <h1>HIGHER OR LOWER GAME</h1>
+    <h2 id="scoreDisplay">Score: 0</h2>
+
+    <div class="products-container">
+        <!-- Product 1 -->
+        <div id="product1" class="product">
+            <h3>Loading...</h3>
+        </div>
+
+        <div id="product2" class="product">
+            <h3>Loading...</h3>
+        </div>
+    </div>
+
+    <div id="resultModal" class="modal hidden">
+        <div class="modal-content">
+            <p id="resultMessage"></p>
+            <button id="closeModal">Close</button>
+        </div>
+    </div>
+    
+
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let score = 0;  
+
+        async function fetchRandomProducts() {
+            const response = await fetch(`https://dk.openfoodfacts.org/category/snacks.json`);
+            const data = await response.json();
+            const products = data.products;
+            if (products.length > 0) {
+                const randomIndex1 = Math.floor(Math.random() * products.length);
+                let randomIndex2;
+                do {
+                    randomIndex2 = Math.floor(Math.random() * products.length);
+                } while (randomIndex2 === randomIndex1); 
+
+                return [products[randomIndex1], products[randomIndex2]];
+            } else {
+                throw new Error("No products found");
+            }
+        }
+
+        function displayProducts(product1, product2) {
+            
+            document.getElementById('product1').innerHTML = `
+                <img src="${product1.image_url || ''}" alt="${product1.product_name || 'Product'}">
+                <h3>${product1.nutriments?.['energy-kcal_100g'] || 'N/A'} kcal per 100g</h3>
+                <p>${product1.product_name || 'Unknown Product'}</p>
+            `;
+
+            document.getElementById('product2').innerHTML = `
+                <img src="${product2.image_url || ''}" alt="${product2.product_name || 'Product'}">
+                <h3 id="calories2" class="hidden"> ${product2.nutriments?.['energy-kcal_100g'] || 'N/A'} kcal per 100g</h3>
+                <p>${product2.product_name || 'Unknown Product'}</p>
+                <button id="higherBtn" class="green">Higher</button>
+                <button id="lowerBtn" class="red">Lower</button>
+
+                <div id="comparisonMessage"></div>
+            `;
+
+            let caloriesProduct1 = product1.nutriments?.['energy-kcal_100g'] || 'N/A';
+            let caloriesProduct2 = product2.nutriments?.['energy-kcal_100g'] || 'N/A';
+
+            if (caloriesProduct1 !== 'N/A' && caloriesProduct2 !== 'N/A') {
+                caloriesProduct1 = Number(caloriesProduct1);
+                caloriesProduct2 = Number(caloriesProduct2);
+
+                document.getElementById('higherBtn').addEventListener('click', function() {
+                    handleGuess('higher', caloriesProduct1, caloriesProduct2);
+                });
+
+                document.getElementById('lowerBtn').addEventListener('click', function() {
+                    handleGuess('lower', caloriesProduct1, caloriesProduct2);
+                });
+            }
+        }
+
+        function handleGuess(guess, caloriesProduct1, caloriesProduct2) {
+    const caloriesElement = document.getElementById('calories2');
+    const resultModal = document.getElementById('resultModal');
+    const resultMessage = document.getElementById('resultMessage');
+    const closeModalBtn = document.getElementById('closeModal');
+    let isCorrect = false;
+
+    caloriesElement.classList.remove('hidden');
+
+    if (guess === 'higher' && caloriesProduct2 > caloriesProduct1) {
+        isCorrect = true;
+    } else if (guess === 'lower' && caloriesProduct2 < caloriesProduct1) {
+        isCorrect = true;
+    }
+
+    if (isCorrect) {
+        score++;  
+        resultMessage.textContent = `Correct! `;
+    } else {
+        resultMessage.textContent = `Wrong!`;
+    }
+
+    document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+
+    resultModal.style.display = 'block';
+
+    closeModalBtn.onclick = function() {
+        resultModal.style.display = 'none';
+        fetchAndDisplayProducts();  
+    };
+
+  
+    setTimeout(() => {
+        resultModal.style.display = 'none';
+        fetchAndDisplayProducts(); 
+    }, 3000);  
+}
+
+        async function fetchAndDisplayProducts() {
+            try {
+                const [product1, product2] = await fetchRandomProducts();
+                displayProducts(product1, product2);
+            } catch (error) {
+                console.error("Error fetching or displaying products:", error);
+            }
+        }
+
+        fetchAndDisplayProducts();
+    </script>
+</body>
+</html>
